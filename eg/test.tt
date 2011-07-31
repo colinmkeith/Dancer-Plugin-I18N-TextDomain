@@ -1,0 +1,28 @@
+
+By default TT variables starting with an underscore are private and will not be printed.
+
+This is unfortunate since gettext uses __(), __x(), etc. for the the function names.
+
+To allow the use of these function names "out of the box" the plugin therefore
+unsets the $Template::Stash::PRIVATE variable. If you wish to keep such variables
+private then you need to use your own prefix to the functions to call. For example
+set
+
+plugins:
+  "I18N::TextDomain":
+    prefix: 'gt'
+
+and you can then call them as gt__(), gt__x(), etc.
+
+To test in template code:
+
+
+<ul>
+[% IF settings.plugins.item('I18N::TextDomain').prefix; %]
+  <li>test1 = "[% gt__('hello world'); %]"</li>
+  <li>test2 = "[% gt__x('hello {name}', name=>'world'); %]"</li>
+[% ELSE %]
+  <li>test1 = "[% __('hello world'); %]"</li>
+  <li>test2 = "[% __x('hello {name}', name=>'world'); %]"</li>
+[% END %]
+</ul>
