@@ -14,7 +14,23 @@ To install this module, run the following commands:
 
 SUPPORT AND DOCUMENTATION
 
-Tricky things to watch are that;
+Currently you need to set the language yourself. It doesn't (yet?) look at the
+browser's Accept-Languages: header and find that language / fall back through
+other languages.
+
+That information can be found in a number of different ways or you may not want
+it to be set for you (for example if it is sent by the application's admin
+rather than by the client) and doing so would increase the dependencies. I
+don't like modules importing the kitchen sink because they think that their way
+of doing some extra feature is good.
+
+For one solution see L<Locale::Util> for details on extracting this information
+from UA headers and then possibly L<I18N-LangTags> for parsing it in to
+language tags that are superordinate to the tag provided by the client. E.g.
+any "en" language tag is considered to be English.
+
+
+Tricky things in the code are;
 
 1. Locale::TextDomain (L::TD) uses the package of the caller to determine the
 textdomain. This is tricky because when you set this up using set_i18n_domain()
@@ -44,7 +60,8 @@ if the gettext method is a __*x() method. You can avoid it in TT by using
 
 But that is more typing and harder to read.
 
-
+These shouldn't affect usage since the caller should always be the plugin, but
+it is worth noting.
 Suggestions on better solutions to either of these are welcome.
 
 
@@ -55,18 +72,7 @@ perldoc command.
 
 You can also look for information at:
 
-    RT, CPAN's request tracker (report bugs here)
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Dancer-Plugin-I18N-TextDomain
-
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Dancer-Plugin-I18N-TextDomain
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/Dancer-Plugin-I18N-TextDomain
-
-    Search CPAN
-        http://search.cpan.org/dist/Dancer-Plugin-I18N-TextDomain/
-
+L<http://github.com/colinmkeith/Dancer-Plugin-I18N-TextDomain.git>
 
 LICENSE AND COPYRIGHT
 

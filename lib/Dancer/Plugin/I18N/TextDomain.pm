@@ -60,15 +60,17 @@ sub set_i18n_language {
 sub set_i18n_domain {
   $_[0] && ($settings->{domain}     = $_[0]);
   $_[1] && ($settings->{domain_dir} = $_[1]);
-  $settings->{domain}        || return 0;
-  $settings->{domain_dir}    || return 0;
-  -d $settings->{domain_dir} || return 0;
+  $settings->{domain}        || return -1;
+  $settings->{domain_dir}    || return -2;
+  -d $settings->{domain_dir} || return -3;
 
   require Locale::TextDomain;
 
   # Grrr. Needed to stop warnings about redefined subs and prototype mismatches
   @Locale::TextDomain::EXPORT = ();
   Locale::TextDomain->import($settings->{domain}, $settings->{domain_dir});
+  Locale::Messages::select_package('gettext_xs');
+  return 0;
 }
 
 # We need this function because Locale::TextDomain uses the package of the
@@ -159,6 +161,39 @@ accessed via the template, for example in Template Toolkit, C<[% __x(...) %]>
 
 =back
 
+The following methods are also provided;
+
+=over 4
+
+=item set_i18n_language($language)
+
+Sets the language to use. The source of the language is left as an exercise for
+the reader. Set it through your config.yml for a fixed value, as a result of an
+configuration option within the application's UI settings or as the result of a
+User Agent indicating support for a language.
+
+For the latter case we suggest looking at L<Locale::Util> and L<I18N-LangTags>
+
+Setting this will call the L<POSIX> function setlocal() to set this language.
+Note that we only set LC_MESSAGES so as to avoid interfering with LC_MONEY,
+etc.
+
+=item set_i18n_domain($appName, $languageDir)
+
+Use this (or the config.yml setting) to define where gettext should look for
+your catalogue files. The location of the actual message catalogue then becomes;
+
+$languageDir/$language/LC_MESSAGES/$appName.mo
+
+B<WARNING>: You can only use one directory to hold the catalogue file and more
+importantly once set you can't change it (or at least it is really hard to do
+so) and more importantly the directory has to exist before the first gettext
+method is called. If not then this folder will be set to C<undef>, but the
+underlying library won't let you reset the path on a subsequent call.
+
+=back
+
+
 =head1 config.yml configuration
 
 The plugin can be configured with defaults through your config file:
@@ -171,22 +206,9 @@ The plugin can be configured with defaults through your config file:
         domain_dir: "data"
         prefix: "gt"
 
-=head1 Message Catalog (.mo) file
-
-The message catalog .mo file name is whatever name you use for the value of the
-"domain" setting in config.yml. E.g. "myappname" with ".mo" appended. The
-folder location is handled as follows:
-
-C<domain_dir>/C<language>/LC_MESSAGES/C<domain>.mo
-
-
-For example using the example
-
-lang/en_US.UTF8/LC_MESSAGES/testapp.mo
-
 =head1 SEE ALSO
 
-gettext(3i), gettext(1), msgfmt(1)
+gettext(3i), gettext(1), msgfmt(1) or L<Locale::Msgfmt>, L<Locale::Util>, L<I18N-LangTags>
 
 =head1 AUTHOR
 
@@ -195,11 +217,7 @@ Colin Keith, C<< <colinmkeith at gmail.com> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to
-C<bug-dancer-plugin-i18n-textdomain at rt.cpan.org>, or through the web
-interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Dancer-Plugin-I18N-TextDomain>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
+L<https://github.com/colinmkeith/Dancer-Plugin-I18N-TextDomain.git>
 
 
 =head1 SUPPORT
@@ -213,21 +231,7 @@ You can also look for information at:
 
 =over 4
 
-=item * RT: CPAN's request tracker (report bugs here)
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Dancer-Plugin-I18N-TextDomain>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Dancer-Plugin-I18N-TextDomain>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Dancer-Plugin-I18N-TextDomain>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Dancer-Plugin-I18N-TextDomain/>
+L<http://github.com/colinmkeith/Dancer-Plugin-I18N-TextDomain.git>
 
 =back
 
