@@ -25,7 +25,7 @@ don't like modules importing the kitchen sink because they think that their way
 of doing some extra feature is good.
 
 For one solution see L<Locale::Util> for details on extracting this information
-from UA headers and then possibly L<I18N-LangTags> for parsing it in to
+from UA headers and then possibly L<I18N::LangTags> for parsing it in to
 language tags that are superordinate to the tag provided by the client. E.g.
 any "en" language tag is considered to be English.
 
@@ -46,9 +46,10 @@ space before calling the appropriate gettext function.
 
 [% __x('hello {name}', name=>'world'); %]
 
-TT tries to be helpful and pass the parameters as a hash. This isn't actually
-helpful since L::TD expects to receive a hash instead of a hashref. The effect
-is that you get warnings in Dancer about odd numbers of elements in the hash:
+TT tries to be helpful and pass the parameters as a hashref. This isn't actually
+helpful since L::TD expects to receive a hash (or array of key-value pairs)
+instead of a hashref. The effect is that you get warnings in Dancer about odd
+numbers of elements in the hash:
 
 Warning caught during route execution: Odd number of elements in hash assignment at .../Locale/TextDomain.pm line 146.
 
@@ -62,6 +63,7 @@ But that is more typing and harder to read.
 
 These shouldn't affect usage since the caller should always be the plugin, but
 it is worth noting.
+
 Suggestions on better solutions to either of these are welcome.
 
 
