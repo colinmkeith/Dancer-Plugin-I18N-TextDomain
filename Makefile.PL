@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     NAME                => 'Dancer::Plugin::I18N::TextDomain',
-    AUTHOR              => 'Colin Keith <colinmkeith@gmail.com>',
+    AUTHOR              => 'Colin Keith <ckeith@cpan.org>',
     VERSION_FROM        => 'lib/Dancer/Plugin/I18N/TextDomain.pm',
     ABSTRACT_FROM       => 'lib/Dancer/Plugin/I18N/TextDomain.pm',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
