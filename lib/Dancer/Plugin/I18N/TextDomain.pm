@@ -8,7 +8,9 @@ our $VERSION = '0.01';
 
 use Dancer ':syntax';
 use Dancer::Plugin;
-use POSIX;
+use POSIX qw(locale_h);
+use Locale::Messages;
+use Locale::TextDomain qw();
 
 my $settings = plugin_setting;
 
@@ -20,62 +22,60 @@ $settings->{domain}
  && set_i18n_domain($settings->{domain}, $settings->{domain_dir});
 
 register 'set_i18n_language' => \&set_i18n_language;
-register 'set_i18n_domain'   => \&set_i18n_domain;
-
-register '__'    => sub { tdcore('__',    @_); };
-register '__x'   => sub { tdcore('__x',   @_); };
-register '__n'   => sub { tdcore('__n',   @_); };
-register '__nx'  => sub { tdcore('__nx',  @_); };
-register '__p'   => sub { tdcore('__p',   @_); };
-register '__pn'  => sub { tdcore('__pn',  @_); };
-register '__pnx' => sub { tdcore('__pnx', @_); };
-
-before_template(
-  sub {
-    my $tokens = shift;
-    my $prefix = $settings->{prefix} || '';
-
-    # Default fn names are prefixed with __,
-    # which Template Toolkit sees as private vars
-    if(!$prefix) {
-
-      # dup'd to stop warning about unused variable
-      $Template::Stash::PRIVATE = $Template::Stash::PRIVATE = undef;
-    }
-
-    $tokens->{$prefix . '__'}    = sub { tdcore('__',    @_); };
-    $tokens->{$prefix . '__x'}   = sub { tdcore('__x',   @_); };
-    $tokens->{$prefix . '__n'}   = sub { tdcore('__n',   @_); };
-    $tokens->{$prefix . '__nx'}  = sub { tdcore('__nx',  @_); };
-    $tokens->{$prefix . '__p'}   = sub { tdcore('__p',   @_); };
-    $tokens->{$prefix . '__pn'}  = sub { tdcore('__pn',  @_); };
-    $tokens->{$prefix . '__pnx'} = sub { tdcore('__pnx', @_); };
-  });
-
-sub set_i18n_language {
-  $_[0] && ($settings->{language} = $_[0]);
-  POSIX::setlocale(&POSIX::LC_MESSAGES, $settings->{language});
+register 'set_i18n_domain' => \&set_i18n_domain;
+my @gettextMethods;
+# Don't mean to mess with another package's data, but otherwise all the
+# __() methods are forced into my package when I call import()
+while(my $fn = +shift(@Locale::TextDomain::EXPORT)) {
+  substr($fn, 0, 1) eq '$' && next;
+  substr($fn, 0, 1) eq '%' && next;
+  register $fn => sub { tdcore($fn, @_); };
+  push(@gettextMethods, $fn);
 }
 
+# {{{ hook before_template
+hook before_template => sub {
+  my $tokens = shift;
+  my $prefix = $settings->{prefix} || '';
+
+  # Template Toolkit sees _ prefix as private vars
+  $prefix || ($Template::Stash::PRIVATE = $Template::Stash::PRIVATE = undef);
+
+  for my $fn (@gettextMethods) {
+    $tokens->{$prefix . $fn} = sub { tdcore($fn, @_); };
+  }
+}; # }}}
+
+# {{{ set_i18n_language([$lang])
+sub set_i18n_language {
+  $_[0] && ($settings->{language} = $_[0]);
+  POSIX::setlocale(&POSIX::LC_MESSAGES, $ENV{LANG} = $settings->{language});
+  Locale::Messages::nl_putenv("LANG=$ENV{LANG}");
+} # }}}
+
+# {{{ set_i18n_domain($domain, $domain_dir)
 sub set_i18n_domain {
   $_[0] && ($settings->{domain}     = $_[0]);
   $_[1] && ($settings->{domain_dir} = $_[1]);
-  $settings->{domain}        || return -1;
-  $settings->{domain_dir}    || return -2;
-  -d $settings->{domain_dir} || return -3;
 
-  require Locale::TextDomain;
+  my $app = $settings->{domain}    || return -1;
+  $settings->{domain_dir}          || return -2;
+  -d $settings->{domain_dir}       || return -3;
+  my $lang = $settings->{language} || return -4;
+  my $dir = "data/$lang/LC_MESSAGES/$app.mo";
+  -f $dir || return -5;
 
-  # Grrr. Needed to stop warnings about redefined subs and prototype mismatches
-  @Locale::TextDomain::EXPORT = ();
-  Locale::TextDomain->import($settings->{domain}, $settings->{domain_dir});
   Locale::Messages::select_package('gettext_xs');
+  Locale::gettext_xs::bindtextdomain($app, 'data');
+  Locale::TextDomain->import($app, 'data');
+
   return 0;
-}
+} # }}}
 
 # We need this function because Locale::TextDomain uses the package of the
 # caller. During setup that is __PACKAGE__, but when called from the app, it
 # is the app, e.g. xyz::app and we need to force it back to D:P:I18N:TextDomain
+# {{{ tdcore()
 sub tdcore {
 
   package Dancer::Plugin::I18N::TextDomain;
@@ -87,17 +87,11 @@ sub tdcore {
    && ref($_[$#_]) eq 'HASH'
    && push(@_, %{pop(@_)});
 
-  my $sub = {__ => \&Locale::TextDomain::__,
-    __x   => \&Locale::TextDomain::__x,
-    __n   => \&Locale::TextDomain::__n,
-    __nx  => \&Locale::TextDomain::__nx,
-    __p   => \&Locale::TextDomain::__p,
-    __pn  => \&Locale::TextDomain::__pn,
-    __pnx => \&Locale::TextDomain::__pnx,
-   }->{$which};
-
-   return &{$sub};
-}
+  {
+    no strict 'refs';
+    return &{"Locale::TextDomain::$which"};
+  }
+} # }}}
 
 register_plugin;
 
@@ -177,6 +171,10 @@ For the latter case we suggest looking at L<Locale::Util> and L<I18N-LangTags>
 Setting this will call the L<POSIX> function setlocal() to set this language.
 Note that we only set LC_MESSAGES so as to avoid interfering with LC_MONEY,
 etc.
+
+WARNING: You can get a list of supported languages on your system using
+C<locale -a>. If your selected language is not listed there then it will
+be ignored.
 
 =item set_i18n_domain($appName, $languageDir)
 
