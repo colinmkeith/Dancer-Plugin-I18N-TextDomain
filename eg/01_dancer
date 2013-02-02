@@ -1,0 +1,26 @@
+#!/usr/bin/env perl
+use Dancer;
+use base 'Test';
+
+dance;
+
+true;
+
+package Test;
+use Dancer ':syntax';
+
+use lib 'lib';
+use Dancer::Plugin::I18N::TextDomain;
+
+our $VERSION = '0.1';
+
+hook before => sub {
+  set_i18n_language('en_US');
+  set_i18n_domain('example', 'data');
+};
+
+get '/' => sub {
+  template 'index';
+};
+
+true;
