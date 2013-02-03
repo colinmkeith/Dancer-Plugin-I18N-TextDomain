@@ -12,6 +12,12 @@ use POSIX qw(locale_h);
 use Locale::Messages;
 use Locale::TextDomain qw();
 
+use Dancer::Exception qw(:all);
+register_exception('CatalogDirectoryNotFound',
+                    message_pattern => 'catalog directory %s not found');
+register_exception('CatalogFileNotFound',
+                    message_pattern => 'catalog file %s not found');
+
 my $settings = plugin_setting;
 
 if($settings->{language} || $settings->{deflanguage}) {
@@ -62,14 +68,14 @@ sub set_i18n_domain {
   $settings->{domain_dir}          || return -2;
   -d $settings->{domain_dir}       || return -3;
   my $lang = $settings->{language} || return -4;
-  my $dir = "data/$lang/LC_MESSAGES/$app.mo";
-  -f $dir || return -5;
+  my $dir = "data/$lang/LC_MESSAGES";
+  -d $dir || raise CatalogDirectoryNotFound => $dir;
+  my $moFile = "$dir/$app.mo";
+  -f $moFile || raise CatalogFileNotFound => $moFile;
 
   Locale::Messages::select_package('gettext_xs');
   Locale::gettext_xs::bindtextdomain($app, 'data');
   Locale::TextDomain->import($app, 'data');
-
-  return 0;
 } # }}}
 
 # We need this function because Locale::TextDomain uses the package of the
