@@ -3,8 +3,13 @@ language: perl
 perl:
   - "5.16"
 
+before_install:
+  - git config --global user.email ckeith@cpan.org
+  - git config --global user.name Colin
+
 install:
   - cpanm --installdeps --quiet --notest Net::SNMP
+  - export SKIP_PERL_CRITIC=1
 
 script:
   - perl Makefile.PL
