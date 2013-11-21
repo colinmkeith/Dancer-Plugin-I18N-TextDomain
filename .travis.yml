@@ -1,0 +1,11 @@
+language: perl
+
+perl:
+  - "5.16"
+
+install:
+  - cpanm --installdeps --quiet --notest Net::SNMP
+
+script:
+  - perl Makefile.PL
+  - make test
