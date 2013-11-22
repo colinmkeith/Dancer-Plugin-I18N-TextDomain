@@ -55,8 +55,11 @@ hook before_template => sub {
 # {{{ set_i18n_language([$lang])
 sub set_i18n_language {
   $_[0] && ($settings->{language} = $_[0]);
-  POSIX::setlocale(&POSIX::LC_MESSAGES, $ENV{LANG} = $settings->{language});
-  Locale::Messages::nl_putenv("LANG=$ENV{LANG}");
+  my $lang = $settings->{language};
+  $ENV{LANG} = $lang;
+  POSIX::setlocale(&POSIX::LC_MESSAGES, $lang);
+  Locale::Messages::nl_putenv("LANG=$lang");
+  return $lang;
 } # }}}
 
 # {{{ set_i18n_domain($domain, $domain_dir)
@@ -64,18 +67,19 @@ sub set_i18n_domain {
   $_[0] && ($settings->{domain}     = $_[0]);
   $_[1] && ($settings->{domain_dir} = $_[1]);
 
-  my $app = $settings->{domain}    || return -1;
-  $settings->{domain_dir}          || return -2;
-  -d $settings->{domain_dir}       || return -3;
-  my $lang = $settings->{language} || return -4;
-  my $dir = "data/$lang/LC_MESSAGES";
+  my $app = $settings->{domain}           || return -1;
+  my $domainDir = $settings->{domain_dir} || 'data';
+  -d $domainDir                           || return -3;
+  my $lang = $settings->{language}        || return -4;
+  my $dir = "$domainDir/$lang/LC_MESSAGES";
   -d $dir || raise CatalogDirectoryNotFound => $dir;
   my $moFile = "$dir/$app.mo";
   -f $moFile || raise CatalogFileNotFound => $moFile;
 
   Locale::Messages::select_package('gettext_xs');
-  Locale::gettext_xs::bindtextdomain($app, 'data');
-  Locale::TextDomain->import($app, 'data');
+  Locale::gettext_xs::bindtextdomain($app, $domainDir);
+  Locale::TextDomain->import($app, $domainDir);
+  return 0;
 } # }}}
 
 # We need this function because Locale::TextDomain uses the package of the

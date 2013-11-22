@@ -17,6 +17,7 @@ sub createCatalog {
 
   my $dirname  = dirname($catalogFile);
   -d $dirname || File::Path::make_path($dirname, { verbose=>0, mode=>0700 });
+  -d $dirname || die "Error making dir: $dirname: $!";
 
   open(my $PO, '>', $poFile) || return "Error creating .po ($poFile): $!";
 

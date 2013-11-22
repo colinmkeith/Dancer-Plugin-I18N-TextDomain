@@ -53,10 +53,10 @@ for my $lang (qw(en_US.UTF-8)) {
   my $catalogFile = $catalogDir . $catalog . '.mo';
   unlink($catalogFile);
 
-  is(set_i18n_domain($catalog, $langDir), 0, 'Valid domain directory');
-
   is(createCatalog($catalogFile, $msgfmtCmd), 0,
                    "Created catalog file ($catalogFile)");
+
+  is(set_i18n_domain($catalog, $langDir), 0, 'Valid domain directory');
 
   my $ret;
   is(__('hello world'),
